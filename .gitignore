@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+dist/
+
+# Secrets — never commit
+.env.agents
+*.env
+
+# Runtime files
+.hermes/current-task.md
+.hermes/last-output.md
+
+# OS
+.DS_Store
+
+# Project-specific config (users create their own from config.example.yaml)
+config.yaml
+
+# Runtime/tool dirs
+.claude-flow/
+.opencode/
+.hermes/
+
+# OpenSpec change management (project-specific, not part of the kit)
+openspec/
+

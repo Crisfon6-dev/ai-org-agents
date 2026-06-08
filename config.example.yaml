@@ -1,0 +1,113 @@
+# AI Org Agents — Example Configuration
+# Copy this file to config.yaml and customize for your project.
+# Usage: cp config.example.yaml config.yaml
+
+# =============================================================================
+# PROJECT
+# =============================================================================
+# Path to the root of the project this agent team assists.
+# Use '..' if agents/ lives inside your project (most common case).
+# Use an absolute path for external deployments.
+workspace: ..
+
+project:
+  name: "My Startup"                              # shown in agent startup logs and OpenRouter headers
+  url: "https://github.com/your-org/your-repo"   # HTTP-Referer header for OpenRouter
+  description: "One-line description of your product"
+
+# =============================================================================
+# TRANSPORT
+# =============================================================================
+transport:
+  type: discord   # discord | cli
+  # cli: stdin/stdout — great for local dev without Discord setup
+  # discord: requires DISCORD_TOKEN, GUILD_ID in .env.agents
+
+# =============================================================================
+# BRAIN (Knowledge Base)
+# =============================================================================
+brain:
+  # Path to your project's Obsidian vault or markdown knowledge base.
+  # Relative to agents/ directory, or absolute path.
+  path: ../my-project-brain
+  # How many tokens of brain context to load per agent call.
+  # Higher = richer context but more tokens per call.
+  max_context_tokens: 3000
+
+# =============================================================================
+# LLM PROVIDER
+# =============================================================================
+openrouter:
+  base_url: https://openrouter.ai/api/v1
+  # Set OPENROUTER_API_KEY in your .env.agents file.
+  # With $10+ in your account → 1000 req/day on :free models.
+
+# =============================================================================
+# MODEL SELECTION STRATEGY
+# =============================================================================
+# Cost guide (June 2026, OpenRouter):
+#   :free models  → $0/1M  (1000 req/day with $10+ in account; fallback to paid if rate-limited)
+#   deepseek/deepseek-v4-flash  → $0.098/$0.197 per 1M  (cheap paid fallback)
+#   meta-llama/llama-3.3-70b-instruct → ~$0.07/1M (excellent for general tasks)
+#   deepseek/deepseek-v4-pro   → $0.435/$0.870 per 1M  (reserve for critical technical tasks)
+
+# =============================================================================
+# AGENTS
+# =============================================================================
+# Add an agent: add a block here + create agents/prompts/<role>.md
+# No TypeScript changes needed.
+#
+# Model tiers:
+#   model_fast    → quick factual questions, JSON classification
+#   model_default → standard analysis, creative tasks, recommendations
+#   model_deep    → complex architecture decisions, deep strategy
+# Fallback: if :free model hits rate limit → automatically uses paid version of same model.
+
+agents:
+  founder:
+    role: orchestrator   # EXACTLY ONE orchestrator required
+    prompt: ./prompts/founder.md
+    # Routing (model_fast) stays cheap; CEO reasoning (model_default) uses quality model
+    model_fast:    deepseek/deepseek-v4-flash
+    model_default: meta-llama/llama-3.3-70b-instruct:free
+    model_deep:    deepseek/deepseek-r1:free
+    discord_channel: ai-team-input
+    output_channel: ai-team-output
+    can_write_brain: true
+
+  cto:
+    role: specialist
+    prompt: ./prompts/cto.md
+    model_fast:    meta-llama/llama-3.3-70b-instruct:free
+    model_default: deepseek/deepseek-r1:free          # strong reasoning for analysis
+    model_deep:    deepseek/deepseek-v4-pro            # Pro ONLY for arch decisions → code
+    discord_channel: cto-channel
+    can_write_brain: true
+
+  marketer:
+    role: specialist
+    prompt: ./prompts/marketer.md
+    model_fast:    meta-llama/llama-3.3-70b-instruct:free
+    model_default: meta-llama/llama-3.3-70b-instruct:free   # Llama excels at creative tasks
+    model_deep:    meta-llama/llama-3.3-70b-instruct:free
+    discord_channel: marketing-channel
+    can_write_brain: true
+
+  po:
+    role: specialist
+    prompt: ./prompts/po.md
+    model_fast:    meta-llama/llama-3.3-70b-instruct:free
+    model_default: meta-llama/llama-3.3-70b-instruct:free
+    model_deep:    deepseek/deepseek-r1:free                 # R1 for complex product strategy
+    discord_channel: po-channel
+    can_write_brain: true
+
+  coder:
+    role: specialist
+    prompt: ./prompts/coder.md
+    model_fast:    qwen/qwen3-coder:free          # best free coder, 1M context
+    model_default: qwen/qwen3-coder:free
+    model_deep:    deepseek/deepseek-v4-flash     # paid fallback for complex specs
+    discord_channel: dev-channel
+    can_write_brain: true
+    uses_hermes: true    # delegates implementation to hermes -z (code executor)
