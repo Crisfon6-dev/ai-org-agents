@@ -1,6 +1,31 @@
+export interface LLMTextBlock {
+  type: 'text'
+  text: string
+}
+
+export interface LLMImageBlock {
+  type: 'image_url'
+  image_url: { url: string }
+}
+
+export type LLMContentBlock = LLMTextBlock | LLMImageBlock
+
 export interface LLMMessage {
   role: 'system' | 'user' | 'assistant'
-  content: string
+  content: string | LLMContentBlock[]
+}
+
+export function buildUserContent(
+  text: string,
+  attachments?: Array<{ url: string }>,
+): string | LLMContentBlock[] {
+  if (!attachments || attachments.length === 0) return text
+  const blocks: LLMContentBlock[] = []
+  if (text) blocks.push({ type: 'text', text })
+  for (const att of attachments) {
+    blocks.push({ type: 'image_url', image_url: { url: att.url } })
+  }
+  return blocks
 }
 
 export class OpenRouterClient {
@@ -25,15 +50,18 @@ export class OpenRouterClient {
     this.apiKey = key
   }
 
-  async chat(systemPrompt: string, userMessage: string): Promise<string> {
+  async chat(systemPrompt: string, userContent: string | LLMContentBlock[]): Promise<string> {
     const messages: LLMMessage[] = [
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: userMessage },
+      { role: 'user', content: userContent },
     ]
     return this.complete(messages)
   }
 
   async complete(messages: LLMMessage[], retryCount = 0): Promise<string> {
+    if (process.env.DEBUG_LLM) {
+      console.log(`[openrouter:debug] request body →\n${JSON.stringify({ model: this.model, messages }, null, 2)}`)
+    }
     const res = await fetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -78,6 +106,13 @@ export class OpenRouterClient {
 
     if (!res.ok) {
       const body = await res.text()
+      // Some :free variants get retired (404 "unavailable for free") — fall back to the paid slug
+      if (res.status === 404 && this.model.endsWith(':free') && body.includes('unavailable for free') && retryCount === 0) {
+        const paidVersion = this.model.replace(/:free$/, '')
+        console.warn(`[openrouter] ${this.model} retired from free tier → using paid ${paidVersion}`)
+        const fallbackClient = new OpenRouterClient(paidVersion, this.baseUrl)
+        return fallbackClient.complete(messages, 1)
+      }
       throw new Error(`OpenRouter error ${res.status}: ${body}`)
     }
 

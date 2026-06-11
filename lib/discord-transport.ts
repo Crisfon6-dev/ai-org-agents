@@ -7,7 +7,9 @@ import {
   ChannelType,
   AttachmentBuilder,
 } from 'discord.js'
-import { Transport, IncomingMessage, MessageHandler, SendOptions } from './transport.js'
+import { Transport, IncomingMessage, ImageAttachment, MessageHandler, SendOptions } from './transport.js'
+
+const SUPPORTED_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp'])
 
 export class DiscordTransport implements Transport {
   private client: Client
@@ -28,7 +30,7 @@ export class DiscordTransport implements Transport {
 
   async connect(): Promise<void> {
     const token = process.env.DISCORD_TOKEN
-    if (!token) throw new Error('DISCORD_TOKEN missing in .env.agents')
+    if (!token) throw new Error('DISCORD_TOKEN missing in agents/.env')
 
     this.client.on('messageCreate', (message: Message) => {
       if (message.author.bot) return
@@ -55,6 +57,13 @@ export class DiscordTransport implements Transport {
         return
       }
 
+      const attachments: ImageAttachment[] = [...message.attachments.values()]
+        .filter((a) => {
+          const mime = a.contentType?.split(';')[0].trim() ?? ''
+          return SUPPORTED_IMAGE_TYPES.has(mime)
+        })
+        .map((a) => ({ url: a.url, contentType: a.contentType!, name: a.name }))
+
       const incoming: IncomingMessage = {
         id: message.id,
         channelId: message.channelId,
@@ -62,6 +71,7 @@ export class DiscordTransport implements Transport {
         content: message.content,
         authorId: message.author.id,
         threadId,
+        ...(attachments.length > 0 ? { attachments } : {}),
       }
       handler(incoming).catch((err) =>
         console.error(`[discord-transport] handler error on #${channelName}:`, err),

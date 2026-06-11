@@ -13,6 +13,8 @@ interface BrainWriteOptions {
   role: string
   content: string
   title: string
+  /** Extra frontmatter tags appended after the defaults (e.g. 'skill-gap') */
+  tags?: string[]
 }
 
 // Pages relevant to each agent role for focused context loading
@@ -84,18 +86,19 @@ export class BrainClient {
   }
 
   writeDecision(opts: BrainWriteOptions): void {
-    const { type = 'analysis', role, content, title } = opts
+    const { type = 'analysis', role, content, title, tags = [] } = opts
 
     const today = new Date().toISOString().slice(0, 10)
     const targetPath = join(this.brainPath, 'wiki', 'analysis', `${role}-decisions-${today}.md`)
 
+    const allTags = ['auto-generated', role, ...tags]
     const frontmatter = [
       '---',
       `type: ${type}`,
       'project: aphrodite',
       `source: agent-${role}`,
       `created: ${new Date().toISOString()}`,
-      `tags: [auto-generated, ${role}]`,
+      `tags: [${allTags.join(', ')}]`,
       '---',
     ].join('\n')
 

@@ -1,3 +1,9 @@
+export interface ImageAttachment {
+  url: string
+  contentType: string
+  name: string
+}
+
 export interface IncomingMessage {
   id: string
   channelId: string
@@ -5,6 +11,7 @@ export interface IncomingMessage {
   content: string
   authorId: string
   threadId?: string
+  attachments?: ImageAttachment[]
 }
 
 export interface SendOptions {

@@ -3,6 +3,7 @@ import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { loadConfig, resolvePrompt, resolveWorkspace } from './lib/config.js'
 import { BrainClient } from './lib/brain.js'
+import { SkillsLoader } from './lib/skills.js'
 import { AgentBase, AgentContext } from './lib/agent-base.js'
 import { FounderAgent } from './lib/founder-agent.js'
 import { CoderAgent } from './lib/coder-agent.js'
@@ -25,6 +26,10 @@ async function main() {
   const brainPath = config.brain.path.startsWith('/') ? config.brain.path : resolve(__dirname, config.brain.path)
   const brain = new BrainClient(brainPath, config.brain.max_context_tokens)
 
+  // skills.path: same resolution rule as brain.path
+  const skillsPath = config.skills.path.startsWith('/') ? config.skills.path : resolve(__dirname, config.skills.path)
+  const skills = new SkillsLoader(skillsPath, config.skills.max_context_tokens)
+
   // Build the orchestrator (founder) first
   const founderEntry = Object.entries(config.agents).find(([, a]) => a.role === 'orchestrator')!
   const [founderName, founderConfig] = founderEntry
@@ -37,6 +42,7 @@ async function main() {
     systemPrompt: resolvePrompt(founderConfig, __dirname),
     transport,
     brain,
+    skills,
     project,
   }
 
@@ -54,6 +60,7 @@ async function main() {
       systemPrompt: resolvePrompt(agentConfig, __dirname),
       transport,
       brain,
+      skills,
       project,
     }
 

@@ -6,7 +6,8 @@ import { TaskPlan, appendContext, planSummary, MAX_SUBTASKS, MAX_RETRIES } from 
 import { IncomingMessage } from './transport.js'
 import { DISCLAIMER_MARKER } from './response-validator.js'
 
-const AGENTIC_VERBS = /\b(implementá|implementa|planificá|planifica|construí|construye|completá|completa|desarrollá|desarrolla|build|implement|create|develop|execute|ejecuta|ejecutá)\b/i
+// Tested against accent-stripped text: JS \b is ASCII-only, so "planificá" never matches with a trailing \b
+const AGENTIC_VERBS = /\b(implementa|planifica|construi|construye|completa|desarrolla|build|implement|create|develop|execute|ejecuta)\b/i
 
 export class FounderAgent extends AgentBase {
   private router: Router
@@ -53,7 +54,7 @@ export class FounderAgent extends AgentBase {
       const specialist = this.specialists.get(decision.agentName)
 
       if (!specialist || decision.agentName === 'founder') {
-        const response = await this.process(msg.content)
+        const response = await this.process(msg.content, undefined, msg.attachments)
         await reply(this.formatResponse(response))
         return
       }
@@ -80,7 +81,7 @@ export class FounderAgent extends AgentBase {
       )
 
       // 6. Get specialist response with adaptive model (may include disclaimer marker)
-      const rawResponse = await specialist.process(msg.content, modelForTask)
+      const rawResponse = await specialist.process(msg.content, modelForTask, msg.attachments)
       const [response, disclaimer] = rawResponse.includes(DISCLAIMER_MARKER)
         ? rawResponse.split(DISCLAIMER_MARKER)
         : [rawResponse, undefined]
@@ -119,9 +120,12 @@ export class FounderAgent extends AgentBase {
         })
       }
 
-      // 9. Consolidated summary in thread
+      // 9. Consolidated summary in thread + output channel
       const summary = await this.summarize(msg.content, specialist.name, response)
       await reply(summary)
+      if (this.outputChannel !== msg.channelName) {
+        await this.transport.send(this.outputChannel, summary)
+      }
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err)
       await reply(`❌ Error procesando tu pedido: ${error}`)
@@ -133,7 +137,8 @@ export class FounderAgent extends AgentBase {
   }
 
   private requiresAgenticLoop(content: string, complexity: Complexity): boolean {
-    return complexity === 'complex' && AGENTIC_VERBS.test(content)
+    const normalized = content.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    return complexity === 'complex' && AGENTIC_VERBS.test(normalized)
   }
 
   private async handleAgenticTask(goal: string, reply: (msg: string) => Promise<void>): Promise<void> {
@@ -156,6 +161,9 @@ export class FounderAgent extends AgentBase {
     const done = plan.subtasks.filter((s) => s.status === 'done').length
     const failed = plan.subtasks.filter((s) => s.status === 'failed').length
     await reply(`🎯 **Plan completado:** ${done}/${plan.subtasks.length} subtareas exitosas${failed > 0 ? `, ${failed} fallidas` : ''}`)
+
+    // Self-improvement: stage orchestration-knowledge gaps observed across the plan
+    await this.captureSkillGaps(goal, plan.accumulatedContext)
   }
 
   private async runTaskPlan(plan: TaskPlan, reply: (msg: string) => Promise<void>): Promise<void> {

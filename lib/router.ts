@@ -22,7 +22,7 @@ CATEGORÍAS:
 COMPLEJIDAD:
 - simple: pregunta factual, definición, lookup, respuesta esperada < 3 oraciones. Ej: "¿qué hace X?", "¿cuál es el nombre de Y?"
 - medium: análisis, comparación, recomendación con trade-offs, user story estándar. Ej: "¿qué es mejor A o B?", "redactame una user story para X"
-- complex: diseño arquitectónico, estrategia completa, decisión mayor con múltiples sistemas, spec end-to-end. Ej: "diseñame la arquitectura de X", "planificá el lanzamiento completo de Y"
+- complex: diseño arquitectónico, estrategia completa, decisión mayor con múltiples sistemas, spec end-to-end, O cualquier tarea que requiera aportes de MÚLTIPLES especialistas (técnico + marketing + producto en un mismo pedido). Ej: "diseñame la arquitectura de X", "planificá el lanzamiento completo de Y", "necesito el análisis técnico, el copy y los criterios de aceptación de Z"
 
 Respondé SOLO con JSON válido, sin markdown, sin explicaciones:
 {"category": "<categoría>", "complexity": "<simple|medium|complex>", "reasoning": "<una oración explicando por qué>"}`

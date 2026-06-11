@@ -1,9 +1,34 @@
 import * as readline from 'readline'
 import { mkdirSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { Transport, IncomingMessage, MessageHandler, SendOptions } from './transport.js'
+import { Transport, IncomingMessage, ImageAttachment, MessageHandler, SendOptions } from './transport.js'
 
 const CLI_FILE_DIR = '/tmp/aphrodite-agents'
+
+const IMAGE_URL_RE = /https?:\/\/\S+\.(png|jpe?g|gif|webp)(\?\S*)?/gi
+
+const IMAGE_CONTENT_TYPES: Record<string, string> = {
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+  webp: 'image/webp',
+}
+
+/** Extract image URLs from a typed message into ImageAttachment[], mirroring Discord attachment capture */
+function extractImageAttachments(content: string): ImageAttachment[] {
+  const attachments: ImageAttachment[] = []
+  for (const match of content.matchAll(IMAGE_URL_RE)) {
+    const url = match[0]
+    const ext = match[1].toLowerCase()
+    attachments.push({
+      url,
+      contentType: IMAGE_CONTENT_TYPES[ext] ?? 'image/png',
+      name: url.split('/').pop()?.split('?')[0] ?? 'image',
+    })
+  }
+  return attachments
+}
 
 /**
  * CLI transport for local development without Discord.
@@ -40,12 +65,14 @@ export class CliTransport implements Transport {
         return
       }
 
+      const attachments = extractImageAttachments(content)
       const msg: IncomingMessage = {
         id: `cli-${++this.msgCounter}`,
         channelId: channelName,
         channelName,
         content,
         authorId: 'founder',
+        ...(attachments.length > 0 ? { attachments } : {}),
       }
 
       handler(msg).catch((err) => console.error(`[cli-transport] Error:`, err))

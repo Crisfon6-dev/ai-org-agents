@@ -35,11 +35,20 @@ brain:
   max_context_tokens: 3000
 
 # =============================================================================
+# DISCIPLINE SKILLS (optional)
+# =============================================================================
+# Directory of Agent Skills (one folder per skill, SKILL.md inside).
+# Agents list the skills they use via their `skills:` field below.
+skills:
+  path: ../.claude/skills      # relative to agents/ directory, or absolute
+  max_context_tokens: 2000     # budget for the injected "skills" prompt section
+
+# =============================================================================
 # LLM PROVIDER
 # =============================================================================
 openrouter:
   base_url: https://openrouter.ai/api/v1
-  # Set OPENROUTER_API_KEY in your .env.agents file.
+  # Set OPENROUTER_API_KEY in your .env file (dotenv loads .env, NOT .env.agents).
   # With $10+ in your account → 1000 req/day on :free models.
 
 # =============================================================================
@@ -61,7 +70,12 @@ openrouter:
 #   model_fast    → quick factual questions, JSON classification
 #   model_default → standard analysis, creative tasks, recommendations
 #   model_deep    → complex architecture decisions, deep strategy
-# Fallback: if :free model hits rate limit → automatically uses paid version of same model.
+#   model_vision  → messages with image attachments (model MUST support image input)
+# Fallback: if :free model hits rate limit (429) or is retired from the free tier (404)
+# → automatically retries with the paid version of the same model.
+#
+# Optional per-agent `skills:` list injects discipline skills (Agent Skills standard,
+# SKILL.md format) into the system prompt. See top-level `skills:` block and README.
 
 agents:
   founder:
@@ -70,7 +84,8 @@ agents:
     # Routing (model_fast) stays cheap; CEO reasoning (model_default) uses quality model
     model_fast:    deepseek/deepseek-v4-flash
     model_default: meta-llama/llama-3.3-70b-instruct:free
-    model_deep:    deepseek/deepseek-r1:free
+    model_deep:    meta-llama/llama-3.3-70b-instruct:free   # (deepseek-r1:free was retired from OpenRouter, June 2026)
+    model_vision:  google/gemma-4-31b-it:free               # vision-capable, 262k ctx
     discord_channel: ai-team-input
     output_channel: ai-team-output
     can_write_brain: true
@@ -79,8 +94,9 @@ agents:
     role: specialist
     prompt: ./prompts/cto.md
     model_fast:    meta-llama/llama-3.3-70b-instruct:free
-    model_default: deepseek/deepseek-r1:free          # strong reasoning for analysis
+    model_default: meta-llama/llama-3.3-70b-instruct:free   # (deepseek-r1:free retired)
     model_deep:    deepseek/deepseek-v4-pro            # Pro ONLY for arch decisions → code
+    model_vision:  google/gemma-4-31b-it:free
     discord_channel: cto-channel
     can_write_brain: true
 
@@ -90,6 +106,7 @@ agents:
     model_fast:    meta-llama/llama-3.3-70b-instruct:free
     model_default: meta-llama/llama-3.3-70b-instruct:free   # Llama excels at creative tasks
     model_deep:    meta-llama/llama-3.3-70b-instruct:free
+    model_vision:  google/gemma-4-31b-it:free
     discord_channel: marketing-channel
     can_write_brain: true
 
@@ -98,7 +115,8 @@ agents:
     prompt: ./prompts/po.md
     model_fast:    meta-llama/llama-3.3-70b-instruct:free
     model_default: meta-llama/llama-3.3-70b-instruct:free
-    model_deep:    deepseek/deepseek-r1:free                 # R1 for complex product strategy
+    model_deep:    meta-llama/llama-3.3-70b-instruct:free    # (deepseek-r1:free retired)
+    model_vision:  google/gemma-4-31b-it:free
     discord_channel: po-channel
     can_write_brain: true
 
@@ -108,6 +126,8 @@ agents:
     model_fast:    qwen/qwen3-coder:free          # best free coder, 1M context
     model_default: qwen/qwen3-coder:free
     model_deep:    deepseek/deepseek-v4-flash     # paid fallback for complex specs
+    model_vision:  google/gemma-4-31b-it:free     # error screenshots, expected UI
     discord_channel: dev-channel
     can_write_brain: true
     uses_hermes: true    # delegates implementation to hermes -z (code executor)
+    # skills: [my-frontend, my-backend]   # optional discipline skills (see skills: block above)

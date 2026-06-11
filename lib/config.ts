@@ -13,10 +13,13 @@ const AgentConfigSchema = z.object({
   model_fast: z.string().optional(),    // simple questions, factual lookups
   model_default: z.string().optional(), // standard analysis and recommendations
   model_deep: z.string().optional(),    // complex architecture / deep strategy
+  model_vision: z.string().optional(),  // messages with image attachments (must support image input)
   discord_channel: z.string(),
   output_channel: z.string().optional(),
   can_write_brain: z.boolean().default(false),
   uses_hermes: z.boolean().default(false),
+  // Discipline skills (Agent Skills standard) injected into the system prompt
+  skills: z.array(z.string()).default([]),
 }).refine(
   (d) => !!(d.model ?? d.model_default),
   { message: 'Agent must have at least one of: model, model_default' },
@@ -38,6 +41,12 @@ const OrgConfigSchema = z.object({
     path: z.string(),
     max_context_tokens: z.number().default(3000),
   }),
+  // Discipline skills directory (Agent Skills standard, SKILL.md per skill).
+  // Relative paths are resolved from the agents/ directory, like brain.path.
+  skills: z.object({
+    path: z.string().default('../.claude/skills'),
+    max_context_tokens: z.number().default(2000),
+  }).default({}),
   openrouter: z.object({
     base_url: z.string().default('https://openrouter.ai/api/v1'),
   }),
