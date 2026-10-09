@@ -1,5 +1,5 @@
 {
-  "name": "aphrodite-agents",
+  "name": "ai-org-agents",
   "version": "0.2.0",
   "private": true,
   "type": "module",
@@ -19,5 +19,6 @@
     "@types/node": "^22.15.29",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"
-  }
+  },
+  "license": "MIT"
 }

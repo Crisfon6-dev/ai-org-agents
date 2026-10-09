@@ -41,7 +41,7 @@ You → #ai-team-input (Discord)
 
 **1. Install dependencies**
 ```bash
-cd agents && npm install
+npm install
 ```
 
 **2. Copy and configure**
@@ -54,8 +54,8 @@ cp env.example .env
 
 **3. Customize prompts**
 ```bash
-# Edit agents/prompts/*.md — replace [YOUR_PROJECT_NAME] and stack details
-# See agents/prompts/examples/aphrodite/ for a complete real-world example
+# Edit prompts/*.md — replace [YOUR_PROJECT_NAME] and stack details
+# See prompts/examples/saas-startup/ for a complete worked example (fictional invoicing SaaS)
 ```
 
 **4. (Optional) Set up Discord**
@@ -100,7 +100,7 @@ agents:
     can_write_brain: true
 ```
 
-2. Create `agents/prompts/devops.md` with the agent's expertise and behavior.
+2. Create `prompts/devops.md` with the agent's expertise and behavior.
 
 That's it. No TypeScript changes needed.
 
@@ -154,7 +154,7 @@ A failed capture never affects the main task (warning only).
 3. **Discard**: remove the entry, leaving a one-line reason (or move it to the brain if it's worth keeping as history).
 4. Re-run `./scripts/sync-hermes-skills.sh` is NOT needed (symlinks point at the dirs), but restart the org so agents reload skill context.
 
-Scope rule: **domain** gaps (conventions, paths, repo patterns) go to skill LEARNINGS; **role identity/format** gaps go to `prompts/examples/aphrodite/<rol>.md` (see openspec change `agent-org-functional-completion`).
+Scope rule: **domain** gaps (conventions, paths, repo patterns) go to skill LEARNINGS; **role identity/format** gaps go to `prompts/examples/<example>/<role>.md` (see openspec change `agent-org-functional-completion`).
 
 ## Cost Optimization
 
@@ -173,7 +173,7 @@ When `:free` models hit upstream rate limits, the system automatically retries w
 
 ## Examples
 
-See `agents/prompts/examples/aphrodite/` for a complete real-world deployment on a creator marketplace platform — including domain-specific CTO, Marketer, PO, and Coder prompts.
+See `prompts/examples/saas-startup/` for a complete worked example (a fictional invoicing SaaS) — including domain-specific Founder, CTO, Marketer, PO, and Coder prompts.
 
 ## License
 
